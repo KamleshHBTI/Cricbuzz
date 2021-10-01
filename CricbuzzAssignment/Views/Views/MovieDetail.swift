@@ -16,6 +16,11 @@ class MovieDetail: UIView{
   private var rating: UILabel!
   private var plot: UILabel!
   private var poster: UIImageView!
+  private var starView: StarsView!
+  private var pickerview: UIPickerView!
+  private var sourceRating:[Rating]?
+
+  private var stackView: UIStackView!
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -32,6 +37,8 @@ class MovieDetail: UIView{
   }
   
   public func configure(with movie: Movie) {
+    starView.rating = Double(String(movie.imdbRating ?? "")) ?? 0
+    sourceRating = movie.ratings
     title.text = movie.title
     genre.text = movie.genre
     releasedDate.text = movie.released
@@ -43,44 +50,88 @@ class MovieDetail: UIView{
   }
   
   func getData(from url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> ()) {
-      URLSession.shared.dataTask(with: url, completionHandler: completion).resume()
-  }
-
-  func downloadImage(from url: URL) {
-      print("Download Started")
-      getData(from: url) { data, response, error in
-          guard let data = data, error == nil else { return }
-          print(response?.suggestedFilename ?? url.lastPathComponent)
-          print("Download Finished")
-          // always update the UI from the main thread
-          DispatchQueue.main.async() { [weak self] in
-              self?.poster.image = UIImage(data: data)
-          }
-      }
+    URLSession.shared.dataTask(with: url, completionHandler: completion).resume()
   }
   
-  private func setupUI() {
-    let stackView = UIStackView()
+  func downloadImage(from url: URL) {
+    getData(from: url) { data, response, error in
+      guard let data = data, error == nil else { return }
+      // always update the UI from the main thread
+      DispatchQueue.main.async() { [weak self] in
+        self?.poster.image = UIImage(data: data)
+      }
+    }
+  }
+  
+  
+  private func pickerViewSetup(){
+    pickerview = UIPickerView()
+    pickerview.dataSource = self
+    pickerview.delegate = self
+    NSLayoutConstraint.activate([
+      pickerview.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 0),
+      pickerview.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: 0),
+      pickerview.topAnchor.constraint(equalTo: self.bottomAnchor, constant: 100),
+      pickerview.heightAnchor.constraint(equalToConstant: self.frame.height / 3)
+
+    ])
+    self.addSubview(pickerview)
+  }
+  
+  private func stackViewSetup(){
+    stackView = UIStackView()
     stackView.axis = .horizontal
     stackView.distribution = .fill
-    stackView.spacing = 8
+    stackView.spacing = 10
     stackView.alignment = .leading
     stackView.translatesAutoresizingMaskIntoConstraints = false
     self.addSubview(stackView)
     NSLayoutConstraint.activate([
       stackView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 8),
       stackView.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -8),
-      stackView.topAnchor.constraint(equalTo: self.topAnchor, constant: 80),
+      stackView.topAnchor.constraint(equalTo: self.topAnchor, constant: 100),
       stackView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -8)
     ])
-    
+  }
+  
+  private func posterSetup(){
     poster = UIImageView()
     stackView.addArrangedSubview(poster)
     NSLayoutConstraint.activate([
       poster.widthAnchor.constraint(equalToConstant: 60),
       poster.heightAnchor.constraint(equalToConstant: 100)
     ])
+  }
+  
+  private func starViewSetup(){
+    starView = StarsView(frame: CGRect(x: self.frame.origin.x , y: rating.frame.origin.y + 10, width: 100, height: 30))
+    starView.tintColor = .blue
+  }
+  
+  private func setupUI() {
+ 
+    stackViewSetup()
+    //pickerViewSetup()
+    posterSetup()
+    allLabelSetup()
     
+    starViewSetup()
+    
+    let textStackView = UIStackView()
+    textStackView.axis = .vertical
+    textStackView.distribution = .fill
+    textStackView.alignment = .leading
+    textStackView.spacing = 4
+    textStackView.addArrangedSubview(title)
+    textStackView.addArrangedSubview(genre)
+    textStackView.addArrangedSubview(releasedDate)
+    textStackView.addArrangedSubview(rating)
+    textStackView.addArrangedSubview(plot)
+    textStackView.addArrangedSubview(starView)
+    stackView.addArrangedSubview(textStackView)
+  }
+  
+  private func allLabelSetup(){
     title = UILabel()
     title.font = .boldSystemFont(ofSize: 14)
     title.numberOfLines = 0
@@ -97,26 +148,32 @@ class MovieDetail: UIView{
     genre.lineBreakMode = .byTruncatingTail
     
     plot = UILabel()
-    plot.font = .systemFont(ofSize: 14)
-    plot.numberOfLines = 0
+    plot.font = .systemFont(ofSize: 12)
+    plot.numberOfLines = 10
     plot.lineBreakMode = .byTruncatingTail
     
     rating = UILabel()
-    rating.font = .systemFont(ofSize: 14)
     rating.numberOfLines = 3
+    rating.font = .boldSystemFont(ofSize: 12)
     rating.lineBreakMode = .byTruncatingTail
-    
-    
-    let textStackView = UIStackView()
-    textStackView.axis = .vertical
-    textStackView.distribution = .equalSpacing
-    textStackView.alignment = .leading
-    textStackView.spacing = 4
-    textStackView.addArrangedSubview(title)
-    textStackView.addArrangedSubview(genre)
-    textStackView.addArrangedSubview(releasedDate)
-    textStackView.addArrangedSubview(rating)
-    textStackView.addArrangedSubview(plot)
-    stackView.addArrangedSubview(textStackView)
   }
+}
+extension MovieDetail: UIPickerViewDelegate{
+  func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+  }
+}
+
+extension MovieDetail: UIPickerViewDataSource{
+  func numberOfComponents(in pickerView: UIPickerView) -> Int {
+    return 1
+  }
+  
+  func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+    return sourceRating?.count ?? 0
+  }
+  
+  func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+    return (sourceRating?[row].source ?? "")   + "Ratings -> " + (sourceRating?[row].value ?? "")
+  }
+  
 }

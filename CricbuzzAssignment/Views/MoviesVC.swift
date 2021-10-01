@@ -18,9 +18,11 @@ class MoviesVC: UIViewController {
     super.viewDidLoad()
     configureUI()
     searchBar.delegate = self
+    self.searchBar.endEditing(true)
   }
   
   private func configureUI() {
+    movieTblView.keyboardDismissMode = .onDrag
     movieTblView.reloadData()
     movieTblView.allowsSelection = true
     searchBar.isHidden = viewModel.isFilteredMovies
@@ -57,7 +59,7 @@ extension MoviesVC: UITableViewDelegate{
 
 extension MoviesVC: UISearchBarDelegate{
   func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-    viewModel.movies = searchText.count > 0 ? viewModel.searchMovieByText(searchText) : viewModel.originalMovieData
+    viewModel.movies = searchText.count > 0 ? viewModel.searchMovieByText(searchText.replacingOccurrences(of: " ", with: "")) : viewModel.originalMovieData
     viewModel.isFilteredMovies = searchText.count > 0
     movieTblView.reloadData()
     
@@ -69,4 +71,9 @@ extension MoviesVC: UISearchBarDelegate{
     movieTblView.reloadData()
   }
   
+  func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+    searchBar.resignFirstResponder()
+  }
+  
 }
+

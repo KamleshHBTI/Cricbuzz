@@ -53,7 +53,7 @@ class MovieViewModel{
   }
   
   func searchMovieByText(_ searchText:String) -> [Movie]{
-    searchMovies = originalMovieData.filter{ $0.getMovieForSearch(searchText)}
+    searchMovies = originalMovieData.filter{ $0.getMovieForSearch(searchText.lowercased())}
     return searchMovies
   }
   
