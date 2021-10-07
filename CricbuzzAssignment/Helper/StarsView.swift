@@ -8,12 +8,13 @@
 import Foundation
 import UIKit
 
-@IBDesignable
-class StarsView: UIView{
+@IBDesignable class StarsView: UIView{
+  
+  var imageViewList = [UIImageView]()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
-    configureUI()
+    updateView()
   }
   
   required init?(coder: NSCoder) {
@@ -22,41 +23,62 @@ class StarsView: UIView{
   
   @IBInspectable var rating: Double = 10.0{
     didSet {
-      setNeedsLayout()
-      configureUI()
+      updateView()
+      layoutIfNeeded()
     }
   }
   
-  func starPath(size: CGFloat, full: Bool) -> UIBezierPath {
-    let fullPoints = [CGPoint(x: 0.5, y: 0.03), CGPoint(x: 0.61, y: 0.38), CGPoint(x: 0.99, y: 0.38), CGPoint(x: 0.68, y: 0.61), CGPoint(x: 0.8, y: 0.97), CGPoint(x: 0.5, y: 0.75), CGPoint(x: 0.2, y: 0.97), CGPoint(x: 0.32, y: 0.61), CGPoint(x: 0.01, y: 0.38), CGPoint(x: 0.39, y: 0.38)].map({ CGPoint(x: $0.x * size, y: $0.y * size) })
-    let halfPoints = [CGPoint(x: 0.5, y: 0.03), CGPoint(x: 0.5, y: 0.75), CGPoint(x: 0.2, y: 0.97), CGPoint(x: 0.32, y: 0.61), CGPoint(x: 0.01, y: 0.38), CGPoint(x: 0.39, y: 0.38)].map({ CGPoint(x: $0.x * size, y: $0.y * size) })
-    let points = full ? fullPoints : halfPoints
-    let starPath = UIBezierPath()
-    starPath.move(to: points.last!)
-    for point in points {
-      starPath.addLine(to: point)
+  @IBInspectable
+  var fillImage: UIImage = UIImage(named: "shapeFill.png")! {
+    didSet {
     }
-    return starPath
   }
   
-  func starLayer(full: Bool) -> CAShapeLayer {
-    let shapeLayer = CAShapeLayer()
-    shapeLayer.path = starPath(size: bounds.size.height, full: full).cgPath
-    shapeLayer.fillColor = tintColor.cgColor
-    return shapeLayer
+  @IBInspectable
+  var halfImage: UIImage = UIImage(named: "halfRate.png")! {
+    didSet {
+    }
   }
   
-  override func layoutSubviews() {
-    super.layoutSubviews()
+  @IBInspectable
+  var emptyImage: UIImage = UIImage(named: "shapeEmpty.png")! {
+    didSet {
+    }
   }
   
-  private func configureUI(){
-    for i in 1...10 {
-      if rating >= Double(i) - 0.5 {
-        let star = starLayer(full: rating >= Double(i))
-        star.transform = CATransform3DMakeTranslation(bounds.size.height * CGFloat(i - 1), 0, 0)
-        layer.addSublayer(star)
+  
+  func updateView() {
+    imageViewList.removeAll()
+    subviews.forEach { (view) in
+      view.removeFromSuperview()
+    }
+    let isHalf = Int(rating.rounded(.toNearestOrAwayFromZero)) - Int(rating) > 0
+    
+    for index in 1...10 {
+      let imageView: UIImageView = UIImageView()
+      imageView.image = Int(rating) >= index ?  fillImage : emptyImage
+      if isHalf && (Int(rating + 1) == index){
+        imageView.image = halfImage
       }
+      imageView.tag = index
+      imageView.contentMode = .scaleAspectFit
+      imageViewList.append(imageView)
     }
+    
+    let stackView = UIStackView(arrangedSubviews: imageViewList)
+    stackView.alignment = .fill
+    stackView.axis = .horizontal
+    stackView.distribution = .fillEqually
+    stackView.spacing = 5.0
+    addSubview(stackView)
+    stackView.translatesAutoresizingMaskIntoConstraints = false
+    stackView.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
+    stackView.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
+    stackView.leftAnchor.constraint(equalTo: self.leftAnchor).isActive = true
+    stackView.rightAnchor.constraint(equalTo: self.rightAnchor).isActive = true
   }
+  
+  
+  
+  
 }

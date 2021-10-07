@@ -19,7 +19,7 @@ class MovieDetail: UIView{
   private var starView: StarsView!
   private var pickerview: UIPickerView!
   private var sourceRating:[Rating]?
-
+  private var ratingLbl: UILabel!
   private var stackView: UIStackView!
 
   override init(frame: CGRect) {
@@ -44,6 +44,7 @@ class MovieDetail: UIView{
     releasedDate.text = movie.released
     rating.text = movie.imdbRating
     plot.text = movie.plot
+    ratingLbl.text = (sourceRating?[0].source ?? "")   + " Ratings -> " + (sourceRating?[0].value ?? "")
     if let stringUrl =  movie.poster, let url = URL(string: stringUrl) {
       downloadImage(from: url)
     }
@@ -65,17 +66,9 @@ class MovieDetail: UIView{
   
   
   private func pickerViewSetup(){
-    pickerview = UIPickerView()
+    pickerview = UIPickerView(frame: CGRect(x: self.frame.origin.x , y: ratingLbl.frame.origin.y, width: self.frame.width, height: 100))
     pickerview.dataSource = self
     pickerview.delegate = self
-    NSLayoutConstraint.activate([
-      pickerview.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 0),
-      pickerview.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: 0),
-      pickerview.topAnchor.constraint(equalTo: self.bottomAnchor, constant: 100),
-      pickerview.heightAnchor.constraint(equalToConstant: self.frame.height / 3)
-
-    ])
-    self.addSubview(pickerview)
   }
   
   private func stackViewSetup(){
@@ -104,19 +97,19 @@ class MovieDetail: UIView{
   }
   
   private func starViewSetup(){
-    starView = StarsView(frame: CGRect(x: self.frame.origin.x , y: rating.frame.origin.y + 10, width: 100, height: 30))
+    starView = StarsView(frame: CGRect(x: self.frame.origin.x , y: plot.frame.origin.y + 100, width: 100, height: 30))
     starView.tintColor = .blue
   }
   
   private func setupUI() {
  
     stackViewSetup()
-    //pickerViewSetup()
     posterSetup()
     allLabelSetup()
     
     starViewSetup()
-    
+    pickerViewSetup()
+
     let textStackView = UIStackView()
     textStackView.axis = .vertical
     textStackView.distribution = .fill
@@ -127,7 +120,9 @@ class MovieDetail: UIView{
     textStackView.addArrangedSubview(releasedDate)
     textStackView.addArrangedSubview(rating)
     textStackView.addArrangedSubview(plot)
+    textStackView.addArrangedSubview(ratingLbl)
     textStackView.addArrangedSubview(starView)
+    textStackView.addArrangedSubview(pickerview)
     stackView.addArrangedSubview(textStackView)
   }
   
@@ -156,11 +151,19 @@ class MovieDetail: UIView{
     rating.numberOfLines = 3
     rating.font = .boldSystemFont(ofSize: 12)
     rating.lineBreakMode = .byTruncatingTail
+    
+    ratingLbl = UILabel()
+    ratingLbl.font = .boldSystemFont(ofSize: 12)
+    ratingLbl.lineBreakMode = .byCharWrapping
   }
 }
 extension MovieDetail: UIPickerViewDelegate{
+  
   func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+    calculateRating(sourceRating?[row].source ?? "0", sourceRating?[row].value ?? "0");
+    ratingLbl.text  = (sourceRating?[row].source ?? "")   + " Ratings -> " + (sourceRating?[row].value ?? "")
   }
+  
 }
 
 extension MovieDetail: UIPickerViewDataSource{
@@ -172,8 +175,39 @@ extension MovieDetail: UIPickerViewDataSource{
     return sourceRating?.count ?? 0
   }
   
-  func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
-    return (sourceRating?[row].source ?? "")   + "Ratings -> " + (sourceRating?[row].value ?? "")
+  func pickerView(_ pickerView: UIPickerView, viewForRow row: Int, forComponent component: Int, reusing view: UIView?) -> UIView {
+    var pickerLabel: UILabel? = (view as? UILabel)
+      if pickerLabel == nil {
+          pickerLabel = UILabel()
+          pickerLabel?.font = .boldSystemFont(ofSize: 12)
+          pickerLabel?.textAlignment = .left
+      }
+      pickerLabel?.text  = (sourceRating?[row].source ?? "")   + " Ratings -> " + (sourceRating?[row].value ?? "")
+    pickerLabel?.textColor = UIColor.darkGray
+      return pickerLabel!
   }
   
+  private func calculateRating(_ source: String, _ value: String){
+    
+   let ratingType = RatingType(rawValue: source)
+    var rating: Double!
+    
+    switch ratingType{
+    case .Internet:
+      let stringValue = value.split(separator: "/").first
+      rating = Double(stringValue ?? "0")
+      break
+    case .Metacritic:
+      let stringValue = value.split(separator: "/").first
+      rating = (Double(stringValue!)!) / 10
+      break
+    case .Rotten:
+      let stringValue = value.split(separator: "%").first
+      rating = (Double(stringValue!)!) / 10
+      break
+    default:
+      break
+    }
+    starView.rating = rating
+  }
 }

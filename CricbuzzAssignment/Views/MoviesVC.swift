@@ -23,7 +23,6 @@ class MoviesVC: UIViewController {
   
   private func configureUI() {
     movieTblView.keyboardDismissMode = .onDrag
-    movieTblView.reloadData()
     movieTblView.allowsSelection = true
     searchBar.isHidden = viewModel.isFilteredMovies
   }

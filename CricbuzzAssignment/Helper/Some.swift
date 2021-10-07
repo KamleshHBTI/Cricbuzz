@@ -7,9 +7,7 @@
 
 import Foundation
 import UIKit
-class Some: UIViewController{
-  
-}
+
 extension UIViewController
 {
   class func instantiateFromStoryboard(_ name: String = "Main") -> Self

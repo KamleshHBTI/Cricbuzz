@@ -20,6 +20,12 @@ static func getType(_ index: Int) -> String{
     
 }
 
+enum RatingType: String{
+  case Internet = "Internet Movie Database"
+  case Rotten = "Rotten Tomatoes"
+  case Metacritic = "Metacritic"
+}
+
 
 enum CellType: String{
   case defaultCell
